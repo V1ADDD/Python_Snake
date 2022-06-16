@@ -7,6 +7,7 @@ pygame.init()
 
 button_sound = pygame.mixer.Sound('button.wav')
 current_lock = 0
+Score = 0
 
 screen = pygame.display.set_mode((1200, 800))
 
@@ -20,6 +21,33 @@ def print_text(message: str, x: int, y: int, font_color='black', font_type='pixe
     font_type = pygame.font.Font(font_type, font_size)
     text = font_type.render(message, True, font_color)
     screen.blit(text, (x, y))
+
+
+class Snake:
+    def __init__(self):
+        self.width = 10
+        self.height = 10
+        self.x = 597
+        self.y = 397
+        self.color = (13, 162, 58)
+
+    def draw(self):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]:
+            self.y -= 2
+        elif keys[pygame.K_s]:
+            self.y += 2
+        elif keys[pygame.K_a]:
+            self.x -= 2
+        elif keys[pygame.K_d]:
+            self.x += 2
+        if self.x < 200 or self.x > 990 or self.y < 230 or self.y > 720:
+            set_current_lock(4)
+            self.x = 597
+            self.y = 397
+
+        pygame.time.delay(10)
 
 
 class Button:
@@ -51,6 +79,7 @@ play_button = Button(400, 100)
 results_button = Button(400, 100)
 back_button = Button(100, 100)
 exit_button = Button(400, 100)
+player = Snake()
 while True:
     screen.fill((0, 0, 0))
     for event in pygame.event.get():
@@ -66,6 +95,10 @@ while True:
         # game
         print_text("Game", 510, 100, font_color='white')
         back_button.draw(80, 80, 25, 15, "<", 0)
+        pygame.draw.rect(screen, 'white', pygame.Rect(200, 230, 800, 500), 2)
+        print_text(str(Score), 1000, 100, font_color='white')
+        Score = 0
+        player.draw()
     elif current_lock == 2:
         # results
         print_text("Results", 450, 100, font_color='white')
@@ -74,4 +107,10 @@ while True:
         # exit
         pygame.quit()
         sys.exit()
+    elif current_lock == 4:
+        # results
+        print_text("Game Over!", 350, 100, font_color='white')
+        back_button.draw(80, 80, 25, 15, "<", 0)
+        print_text(str(Score), 600, 400, font_color='white')
+        Score = 0
     pygame.display.flip()
