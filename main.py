@@ -1,5 +1,6 @@
 import pygame
 import sys
+import random
 
 from pygame import display
 
@@ -8,19 +9,65 @@ pygame.init()
 button_sound = pygame.mixer.Sound('button.wav')
 current_lock = 0
 Score = 0
+Last_Score = 0
+tail_segments = []
 
 screen = pygame.display.set_mode((1200, 800))
 
 
 def set_current_lock(a: int):
     global current_lock
+    global Last_Score
     current_lock = a
+    if a == 4:
+        Last_Score = Score
+
+
+def score_up():
+    global Score
+    Score += 10
 
 
 def print_text(message: str, x: int, y: int, font_color='black', font_type='pixelfont.ttf', font_size=80):
     font_type = pygame.font.Font(font_type, font_size)
     text = font_type.render(message, True, font_color)
     screen.blit(text, (x, y))
+
+
+class Apple:
+    def __init__(self):
+        self.width = 10
+        self.height = 10
+        self.color = 'Red'
+        self.x = random.randint(200, 1000)
+        self.y = random.randint(230, 730)
+
+    def draw(self):
+        if screen.get_at((self.x, self.y)) == (0, 0, 0, 255):
+            pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+
+    def update(self):
+        self.x = random.randint(200, 1000)
+        self.y = random.randint(230, 730)
+
+
+apple = Apple()
+
+
+class Segment:
+    def __init__(self, x: int, y: int):
+        self.width = 10
+        self.height = 10
+        self.x = x
+        self.y = y
+        self.color = (13, 162, 58)
+
+    def draw(self):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+
+    def move(self, x: int, y: int):
+        self.x = x
+        self.y = y
 
 
 class Snake:
@@ -32,22 +79,57 @@ class Snake:
         self.color = (13, 162, 58)
 
     def draw(self):
+        global tail_segments
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
         keys = pygame.key.get_pressed()
+
         if keys[pygame.K_w]:
-            self.y -= 2
+            if len(tail_segments) != 0:
+                for i in range(len(tail_segments) - 1, -1, -1):
+                    if i == 0:
+                        tail_segments[i].move(self.x, self.y)
+                    else:
+                        tail_segments[i].move(tail_segments[i - 1].x, tail_segments[i - 1].y)
+            self.y -= 10
         elif keys[pygame.K_s]:
-            self.y += 2
+            if len(tail_segments) != 0:
+                for i in range(len(tail_segments) - 1, -1, -1):
+                    if i == 0:
+                        tail_segments[i].move(self.x, self.y)
+                    else:
+                        tail_segments[i].move(tail_segments[i - 1].x, tail_segments[i - 1].y)
+            self.y += 10
         elif keys[pygame.K_a]:
-            self.x -= 2
+            if len(tail_segments) != 0:
+                for i in range(len(tail_segments) - 1, -1, -1):
+                    if i == 0:
+                        tail_segments[i].move(self.x, self.y)
+                    else:
+                        tail_segments[i].move(tail_segments[i - 1].x, tail_segments[i - 1].y)
+            self.x -= 10
         elif keys[pygame.K_d]:
-            self.x += 2
+            if len(tail_segments) != 0:
+                for i in range(len(tail_segments) - 1, -1, -1):
+                    if i == 0:
+                        tail_segments[i].move(self.x, self.y)
+                    else:
+                        tail_segments[i].move(tail_segments[i - 1].x, tail_segments[i - 1].y)
+            self.x += 10
+
         if self.x < 200 or self.x > 990 or self.y < 230 or self.y > 720:
             set_current_lock(4)
             self.x = 597
             self.y = 397
+        if apple.x <= self.x + 5 <= apple.x + 10 and apple.y <= self.y + 5 <= apple.y + 10:
+            apple.update()
+            score_up()
+            if len(tail_segments) == 0:
+                tail_segments.append(Segment(self.x + 10, self.y))
+            else:
+                tail_segments.append(
+                    Segment(tail_segments[len(tail_segments)-1].x+10, tail_segments[len(tail_segments)-1].y))
 
-        pygame.time.delay(10)
+        pygame.time.delay(30)
 
 
 class Button:
@@ -97,8 +179,11 @@ while True:
         back_button.draw(80, 80, 25, 15, "<", 0)
         pygame.draw.rect(screen, 'white', pygame.Rect(200, 230, 800, 500), 2)
         print_text(str(Score), 1000, 100, font_color='white')
-        Score = 0
+        for segment in tail_segments:
+            segment.draw()
         player.draw()
+        apple.draw()
+
     elif current_lock == 2:
         # results
         print_text("Results", 450, 100, font_color='white')
@@ -108,9 +193,9 @@ while True:
         pygame.quit()
         sys.exit()
     elif current_lock == 4:
-        # results
+        # game over
         print_text("Game Over!", 350, 100, font_color='white')
         back_button.draw(80, 80, 25, 15, "<", 0)
-        print_text(str(Score), 600, 400, font_color='white')
+        print_text(str(Last_Score), 600, 400, font_color='white')
         Score = 0
     pygame.display.flip()
