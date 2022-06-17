@@ -8,6 +8,12 @@ from datetime import datetime
 pygame.init()
 
 button_sound = pygame.mixer.Sound('button.wav')
+button_sound.set_volume(0.2)
+lost_sound = pygame.mixer.Sound('lost.wav')
+lost_sound.set_volume(0.1)
+apple_sound = pygame.mixer.Sound('apple.wav')
+apple_sound.set_volume(0.1)
+game_sound = pygame.mixer.Sound('gamemusic.wav')
 current_lock = 0
 Score = 0
 Last_Score = 0
@@ -24,7 +30,11 @@ def set_current_lock(a: int):
     global current_lock
     global Last_Score
     current_lock = a
+    if a == 0:
+        game_sound.set_volume(0.1)
     if a == 4:
+        game_sound.set_volume(0)
+        pygame.mixer.Sound.play(lost_sound)
         Last_Score = Score
         current_datetime = datetime.now()
         DateTime.append(
@@ -34,11 +44,13 @@ def set_current_lock(a: int):
         df = pd.DataFrame({'DateTime': DateTime,
                            'Result': Game_Results})
         df.to_excel('./results.xlsx')
+        pygame.time.delay(1500)
 
 
 def score_up():
     global Score
     Score += 10
+    pygame.mixer.Sound.play(apple_sound)
 
 
 def print_text(message: str, x: int, y: int, font_color='black', font_type='pixelfont.ttf', font_size=80):
@@ -182,11 +194,21 @@ class Button:
         print_text(text, x + text_x, y + text_y)
 
 
+def sort_key(datetime_item: str):
+    # DateTime
+    # Game_Results
+    for i in range(len(DateTime)):
+        if DateTime[i] == datetime_item:
+            return Game_Results[i]
+
+
 play_button = Button(400, 100)
 results_button = Button(400, 100)
 back_button = Button(100, 100)
 exit_button = Button(400, 100)
 player = Snake()
+game_sound.set_volume(0.1)
+pygame.mixer.Sound.play(game_sound, loops=-1)
 while True:
     screen.fill((0, 0, 0))
     for event in pygame.event.get():
@@ -217,6 +239,17 @@ while True:
         # results
         print_text("Results", 450, 100, font_color='white')
         back_button.draw(80, 80, 25, 15, "<", 0)
+        # DateTime
+        # Game_Results
+        DateTime = sorted(DateTime, key=sort_key, reverse=True)
+        Game_Results = sorted(Game_Results, reverse=True)
+        for i in range(0, 5):
+            if i < len(DateTime):
+                print_text(str(i+1)+". "+DateTime[i]+"   "+str(Game_Results[i]), 150, 250+100*i,
+                           font_color='white', font_size=60)
+            else:
+                print_text(str(i + 1) + ". ", 150, 250 + 100 * i,
+                           font_color='white', font_size=60)
         player = Snake()
         Score = 0
     elif current_lock == 3:
@@ -225,7 +258,7 @@ while True:
         sys.exit()
     elif current_lock == 4:
         # game over
-        print_text("Game Over!", 350, 100, font_color='white')
+        print_text("Game Over!", 410, 100, font_color='white')
         back_button.draw(80, 80, 25, 15, "<", 0)
         print_text(str(Last_Score), 600, 400, font_color='white')
         Score = 0
